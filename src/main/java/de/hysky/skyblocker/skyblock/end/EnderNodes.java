@@ -29,10 +29,13 @@ import java.util.Map;
 public class EnderNodes {
     private static final MinecraftClient client = MinecraftClient.getInstance();
     private static final Map<BlockPos, EnderNode> enderNodes = new HashMap<>();
+    // Remove EnderNodes if no particles detected for 10 seconds
+    private static final long PARTICLE_TIMEOUT_MS = 10_000;
 
     @Init
     public static void init() {
-        Scheduler.INSTANCE.scheduleCyclic(EnderNodes::update, 20);
+        // Check every 5 ticks (0.25 seconds) for faster detection
+        Scheduler.INSTANCE.scheduleCyclic(EnderNodes::update, 5);
         WorldRenderEvents.AFTER_TRANSLUCENT.register(EnderNodes::render);
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
             enderNodes.remove(pos);
@@ -85,10 +88,13 @@ public class EnderNodes {
         } else if (ParticleTypes.WITCH.getType().equals(particleType)) {
             particles.right(particles.rightInt() + 1);
         }
+        // Update the last seen timestamp whenever particles are detected
+        enderNode.lastParticleSeen = System.currentTimeMillis();
     }
 
     private static void update() {
         if (shouldProcess() && client.world != null) {
+            long currentTimeMillis = System.currentTimeMillis();
             // Use iterator to safely remove nodes while iterating
             Iterator<Map.Entry<BlockPos, EnderNode>> iterator = enderNodes.entrySet().iterator();
             while (iterator.hasNext()) {
@@ -98,6 +104,13 @@ public class EnderNodes {
                 
                 // Remove if the block is bedrock (mined by someone)
                 if (client.world.getBlockState(pos).isOf(Blocks.BEDROCK)) {
+                    iterator.remove();
+                    continue;
+                }
+                
+                // Failsafe: Remove if no particles detected for the timeout period
+                // This ensures stale nodes are cleaned up even if bedrock check misses them
+                if (enderNode.isConfirmed && currentTimeMillis - enderNode.lastParticleSeen > PARTICLE_TIMEOUT_MS) {
                     iterator.remove();
                     continue;
                 }
@@ -138,18 +151,20 @@ public class EnderNodes {
                 Direction.NORTH, new IntIntMutablePair(0, 0)
         );
         private long lastConfirmed;
+        private long lastParticleSeen;
         private boolean isConfirmed = false;
 
         private EnderNode(BlockPos pos) {
             // Use OUTLINED_HIGHLIGHT for red border with transparency, and enable through walls
             super(pos, () -> Type.OUTLINED_HIGHLIGHT, RED_COLOR, TRANSPARENCY, LINE_WIDTH, true);
+            this.lastParticleSeen = System.currentTimeMillis();
         }
 
         private void updateWaypoint() {
             long currentTimeMillis = System.currentTimeMillis();
 
             // More lenient detection: only need 5 particles of each type per direction
-            // and check less frequently (500ms instead of 2000ms)
+            // Check every 500ms to confirm nodes faster
             if (isConfirmed || lastConfirmed + 500 > currentTimeMillis || client.world == null) return;
 
             // Check if we have enough particles on at least one direction to confirm this is an ender node
