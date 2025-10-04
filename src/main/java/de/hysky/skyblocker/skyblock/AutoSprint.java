@@ -10,14 +10,14 @@ import net.minecraft.client.option.GameOptions;
 /**
  * Auto-sprint feature that automatically maintains sprint when moving forward.
  * This is an accessibility enhancement to reduce the need for repeatedly pressing the sprint key.
- * 
+ *
  * <p>When enabled, the player will automatically sprint when:
  * <ul>
  *   <li>Moving forward (W key is pressed)</li>
  *   <li>Player has enough hunger to sprint</li>
  *   <li>Other vanilla sprint conditions are met</li>
  * </ul>
- * 
+ *
  * <p>This feature is client-side only and does not interact with server-specific mechanics.
  */
 public class AutoSprint {
@@ -41,8 +41,8 @@ public class AutoSprint {
 		GameOptions options = client.options;
 
 		// Auto-sprint when moving forward and not already sprinting
-		if (options.forwardKey.isPressed() && 
-		    !player.isSprinting() && 
+		if (options.forwardKey.isPressed() &&
+		    !player.isSprinting() &&
 		    canSprint(player)) {
 			player.setSprinting(true);
 		}
@@ -50,7 +50,7 @@ public class AutoSprint {
 
 	/**
 	 * Checks if the player can sprint based on game mechanics.
-	 * 
+	 *
 	 * @param player the player to check
 	 * @return true if the player can sprint, false otherwise
 	 */
@@ -62,12 +62,11 @@ public class AutoSprint {
 		// - Not in water (unless swimming) or touching water
 		// - Not on a ladder
 		// - Not riding an entity
-		return !player.isUsingItem() 
-			&& player.getHungerManager().getFoodLevel() > 6 
+		return !player.isUsingItem()
+			&& player.getHungerManager().getFoodLevel() > 6
 			&& !player.isSneaking()
 			&& !player.isTouchingWater()
 			&& !player.isClimbing()
 			&& !player.hasVehicle();
 	}
 }
-

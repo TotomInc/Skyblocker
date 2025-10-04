@@ -101,20 +101,20 @@ public class EnderNodes {
                 Map.Entry<BlockPos, EnderNode> entry = iterator.next();
                 EnderNode enderNode = entry.getValue();
                 BlockPos pos = entry.getKey();
-                
+
                 // Remove if the block is bedrock (mined by someone)
                 if (client.world.getBlockState(pos).isOf(Blocks.BEDROCK)) {
                     iterator.remove();
                     continue;
                 }
-                
+
                 // Failsafe: Remove if no particles detected for the timeout period
                 // This ensures stale nodes are cleaned up even if bedrock check misses them
                 if (enderNode.isConfirmed && currentTimeMillis - enderNode.lastParticleSeen > PARTICLE_TIMEOUT_MS) {
                     iterator.remove();
                     continue;
                 }
-                
+
                 enderNode.updateWaypoint();
             }
         }
@@ -152,11 +152,11 @@ public class EnderNodes {
         private boolean isConfirmed = false;
 
         private EnderNode(BlockPos pos) {
-            super(pos, () -> SkyblockerConfigManager.get().otherLocations.end.enderNodeWaypointType, 
+            super(pos, () -> SkyblockerConfigManager.get().otherLocations.end.enderNodeWaypointType,
                   getColorComponents(), getAlpha(), LINE_WIDTH, true);
             this.lastParticleSeen = System.currentTimeMillis();
         }
-        
+
         private static float[] getColorComponents() {
             java.awt.Color configColor = SkyblockerConfigManager.get().otherLocations.end.enderNodeColor;
             return new float[]{
@@ -165,7 +165,7 @@ public class EnderNodes {
                 configColor.getBlue() / 255f
             };
         }
-        
+
         private static float getAlpha() {
             return SkyblockerConfigManager.get().otherLocations.end.enderNodeColor.getAlpha() / 255f;
         }
