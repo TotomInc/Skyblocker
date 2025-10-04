@@ -137,9 +137,6 @@ public class EnderNodes {
     }
 
     public static class EnderNode extends Waypoint {
-        // Red color with 50% transparency (RGB: 1.0, 0.0, 0.0)
-        private static final float[] RED_COLOR = new float[]{1.0f, 0.0f, 0.0f};
-        private static final float TRANSPARENCY = 0.5f;
         private static final float LINE_WIDTH = 1.0f;
 
         private final Map<Direction, IntIntPair> particles = Map.of(
@@ -155,9 +152,22 @@ public class EnderNodes {
         private boolean isConfirmed = false;
 
         private EnderNode(BlockPos pos) {
-            // Use OUTLINED_HIGHLIGHT for red border with transparency, and enable through walls
-            super(pos, () -> Type.OUTLINED_HIGHLIGHT, RED_COLOR, TRANSPARENCY, LINE_WIDTH, true);
+            super(pos, () -> SkyblockerConfigManager.get().otherLocations.end.enderNodeWaypointType, 
+                  getColorComponents(), getAlpha(), LINE_WIDTH, true);
             this.lastParticleSeen = System.currentTimeMillis();
+        }
+        
+        private static float[] getColorComponents() {
+            java.awt.Color configColor = SkyblockerConfigManager.get().otherLocations.end.enderNodeColor;
+            return new float[]{
+                configColor.getRed() / 255f,
+                configColor.getGreen() / 255f,
+                configColor.getBlue() / 255f
+            };
+        }
+        
+        private static float getAlpha() {
+            return SkyblockerConfigManager.get().otherLocations.end.enderNodeColor.getAlpha() / 255f;
         }
 
         private void updateWaypoint() {
