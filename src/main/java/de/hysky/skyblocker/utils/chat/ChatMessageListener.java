@@ -10,6 +10,7 @@ import de.hysky.skyblocker.skyblock.dwarven.CallMismyla;
 import de.hysky.skyblocker.skyblock.dwarven.RedialOnBadSignal;
 import de.hysky.skyblocker.skyblock.dwarven.Fetchur;
 import de.hysky.skyblocker.skyblock.dwarven.Puzzler;
+import de.hysky.skyblocker.skyblock.end.TitanicExperienceBottleAlert;
 import de.hysky.skyblocker.skyblock.galatea.SweepDetailsListener;
 import de.hysky.skyblocker.utils.Utils;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
@@ -51,6 +52,7 @@ public interface ChatMessageListener {
 				new CallTrevor(),
 				new CallMismyla(),
 				new RedialOnBadSignal(),
+				new TitanicExperienceBottleAlert(),
 				// Filters
 				new AbilityFilter(),
 				new AdFilter(),
