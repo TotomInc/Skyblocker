@@ -344,6 +344,9 @@
 
   "skyblocker.config.general.acceptReparty": "Auto accept Reparty",
 
+  "skyblocker.config.general.autoSprint": "Auto Sprint",
+  "skyblocker.config.general.autoSprint.@Tooltip": "Automatically maintains sprint when moving forward. This accessibility feature reduces the need to repeatedly press the sprint key after attacking or other actions.",
+
   "skyblocker.config.general.hitbox": "Hitboxes",
   "skyblocker.config.general.hitbox.oldCactusHitbox": "Enable 1.8 cactus hitbox",
   "skyblocker.config.general.hitbox.oldFarmlandHitbox": "Enable 1.8 farmland hitbox",

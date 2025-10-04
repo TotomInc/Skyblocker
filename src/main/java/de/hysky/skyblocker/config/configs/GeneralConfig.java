@@ -19,6 +19,8 @@ public class GeneralConfig {
 
     public boolean acceptReparty = true;
 
+	public boolean autoSprint = true;
+
 	public SpeedPresets speedPresets = new SpeedPresets();
 
     public Shortcuts shortcuts = new Shortcuts();
