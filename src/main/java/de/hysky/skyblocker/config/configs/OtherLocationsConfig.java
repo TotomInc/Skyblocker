@@ -2,6 +2,8 @@ package de.hysky.skyblocker.config.configs;
 
 import de.hysky.skyblocker.utils.waypoint.Waypoint;
 
+import java.awt.*;
+
 public class OtherLocationsConfig {
     public Barn barn = new Barn();
 
@@ -37,6 +39,8 @@ public class OtherLocationsConfig {
         public boolean enableEnderNodeHelper = true;
 
 		public Waypoint.Type enderNodeWaypointType = Waypoint.Type.OUTLINED_HIGHLIGHT;
+
+		public Color enderNodeColor = new Color(255, 0, 0, 128);
 
         public boolean hudEnabled = true;
 

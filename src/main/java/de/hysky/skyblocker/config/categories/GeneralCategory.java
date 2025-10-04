@@ -66,6 +66,14 @@ public class GeneralCategory {
                                 newValue -> config.general.acceptReparty = newValue)
                         .controller(ConfigUtils.createBooleanController())
                         .build())
+                .option(Option.<Boolean>createBuilder()
+                        .name(Text.translatable("skyblocker.config.general.autoSprint"))
+                        .description(Text.translatable("skyblocker.config.general.autoSprint.@Tooltip"))
+                        .binding(defaults.general.autoSprint,
+                                () -> config.general.autoSprint,
+                                newValue -> config.general.autoSprint = newValue)
+                        .controller(ConfigUtils.createBooleanController())
+                        .build())
 				//Config Backups
 				.group(OptionGroup.createBuilder()
 						.name(Text.translatable("skyblocker.config.general.backup"))

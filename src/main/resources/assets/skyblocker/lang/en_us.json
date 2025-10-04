@@ -344,6 +344,9 @@
 
   "skyblocker.config.general.acceptReparty": "Auto accept Reparty",
 
+  "skyblocker.config.general.autoSprint": "Auto Sprint",
+  "skyblocker.config.general.autoSprint.@Tooltip": "Automatically maintains sprint when moving forward. This accessibility feature reduces the need to repeatedly press the sprint key after attacking or other actions.",
+
   "skyblocker.config.general.hitbox": "Hitboxes",
   "skyblocker.config.general.hitbox.oldCactusHitbox": "Enable 1.8 cactus hitbox",
   "skyblocker.config.general.hitbox.oldFarmlandHitbox": "Enable 1.8 farmland hitbox",
@@ -870,6 +873,8 @@
   "skyblocker.config.otherLocations.end": "The End",
   "skyblocker.config.otherLocations.end.enableEnderNodeHelper": "Enable Ender Node Helper",
   "skyblocker.config.otherLocations.end.enderNodeWaypointType": "Ender Node Waypoint Type",
+  "skyblocker.config.otherLocations.end.enderNodeColor": "Ender Node Color",
+  "skyblocker.config.otherLocations.end.enderNodeColor.@Tooltip": "The color and transparency of the Ender Node highlight. Includes both the outline and fill color with adjustable alpha (transparency).",
   "skyblocker.config.otherLocations.end.hudEnabled": "HUD Enabled",
   "skyblocker.config.otherLocations.end.muteEndermanSounds": "Mute Enderman Sounds",
   "skyblocker.config.otherLocations.end.protectorLocationEnable": "Show Protector Location",

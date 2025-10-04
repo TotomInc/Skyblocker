@@ -12,10 +12,13 @@ import net.azureaaron.dandelion.systems.ButtonOption;
 import net.azureaaron.dandelion.systems.ConfigCategory;
 import net.azureaaron.dandelion.systems.Option;
 import net.azureaaron.dandelion.systems.OptionGroup;
+import net.azureaaron.dandelion.systems.controllers.ColourController;
 import net.azureaaron.dandelion.systems.controllers.IntegerController;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+
+import java.awt.*;
 
 public class OtherLocationsCategory {
 
@@ -121,6 +124,14 @@ public class OtherLocationsCategory {
 										() -> config.otherLocations.end.enderNodeWaypointType,
 										newValue -> config.otherLocations.end.enderNodeWaypointType = newValue)
 								.controller(ConfigUtils.createEnumController())
+								.build())
+						.option(Option.<Color>createBuilder()
+								.name(Text.translatable("skyblocker.config.otherLocations.end.enderNodeColor"))
+								.description(Text.translatable("skyblocker.config.otherLocations.end.enderNodeColor.@Tooltip"))
+								.binding(defaults.otherLocations.end.enderNodeColor,
+										() -> config.otherLocations.end.enderNodeColor,
+										newValue -> config.otherLocations.end.enderNodeColor = newValue)
+								.controller(ColourController.createBuilder().hasAlpha(true).build())
 								.build())
 						.option(Option.<Boolean>createBuilder()
 								.name(Text.translatable("skyblocker.config.otherLocations.end.hudEnabled"))

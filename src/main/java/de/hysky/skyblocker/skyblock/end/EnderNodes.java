@@ -3,10 +3,9 @@ package de.hysky.skyblocker.skyblock.end;
 import de.hysky.skyblocker.annotations.Init;
 import de.hysky.skyblocker.config.SkyblockerConfigManager;
 import de.hysky.skyblocker.events.ParticleEvents;
-import de.hysky.skyblocker.utils.ColorUtils;
 import de.hysky.skyblocker.utils.Utils;
 import de.hysky.skyblocker.utils.scheduler.Scheduler;
-import de.hysky.skyblocker.utils.waypoint.SeenWaypoint;
+import de.hysky.skyblocker.utils.waypoint.Waypoint;
 import it.unimi.dsi.fastutil.ints.IntIntMutablePair;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -17,22 +16,26 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.packet.s2c.play.ParticleS2CPacket;
 import net.minecraft.particle.ParticleType;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.block.Blocks;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.DyeColor;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class EnderNodes {
     private static final MinecraftClient client = MinecraftClient.getInstance();
     private static final Map<BlockPos, EnderNode> enderNodes = new HashMap<>();
+    // Remove EnderNodes if no particles detected for 10 seconds
+    private static final long PARTICLE_TIMEOUT_MS = 10_000;
 
     @Init
     public static void init() {
-        Scheduler.INSTANCE.scheduleCyclic(EnderNodes::update, 20);
+        // Check every 5 ticks (0.25 seconds) for faster detection
+        Scheduler.INSTANCE.scheduleCyclic(EnderNodes::update, 5);
         WorldRenderEvents.AFTER_TRANSLUCENT.register(EnderNodes::render);
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
             enderNodes.remove(pos);
@@ -85,11 +88,33 @@ public class EnderNodes {
         } else if (ParticleTypes.WITCH.getType().equals(particleType)) {
             particles.right(particles.rightInt() + 1);
         }
+        // Update the last seen timestamp whenever particles are detected
+        enderNode.lastParticleSeen = System.currentTimeMillis();
     }
 
     private static void update() {
-        if (shouldProcess()) {
-            for (EnderNode enderNode : enderNodes.values()) {
+        if (shouldProcess() && client.world != null) {
+            long currentTimeMillis = System.currentTimeMillis();
+            // Use iterator to safely remove nodes while iterating
+            Iterator<Map.Entry<BlockPos, EnderNode>> iterator = enderNodes.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<BlockPos, EnderNode> entry = iterator.next();
+                EnderNode enderNode = entry.getValue();
+                BlockPos pos = entry.getKey();
+
+                // Remove if the block is bedrock (mined by someone)
+                if (client.world.getBlockState(pos).isOf(Blocks.BEDROCK)) {
+                    iterator.remove();
+                    continue;
+                }
+
+                // Failsafe: Remove if no particles detected for the timeout period
+                // This ensures stale nodes are cleaned up even if bedrock check misses them
+                if (enderNode.isConfirmed && currentTimeMillis - enderNode.lastParticleSeen > PARTICLE_TIMEOUT_MS) {
+                    iterator.remove();
+                    continue;
+                }
+
                 enderNode.updateWaypoint();
             }
         }
@@ -98,9 +123,7 @@ public class EnderNodes {
     private static void render(WorldRenderContext context) {
         if (shouldProcess()) {
             for (EnderNode enderNode : enderNodes.values()) {
-                if (enderNode.shouldRender()) {
-                    enderNode.render(context);
-                }
+                enderNode.render(context);
             }
         }
     }
@@ -113,7 +136,9 @@ public class EnderNodes {
         enderNodes.clear();
     }
 
-    public static class EnderNode extends SeenWaypoint {
+    public static class EnderNode extends Waypoint {
+        private static final float LINE_WIDTH = 1.0f;
+
         private final Map<Direction, IntIntPair> particles = Map.of(
                 Direction.UP, new IntIntMutablePair(0, 0),
                 Direction.DOWN, new IntIntMutablePair(0, 0),
@@ -123,25 +148,61 @@ public class EnderNodes {
                 Direction.NORTH, new IntIntMutablePair(0, 0)
         );
         private long lastConfirmed;
+        private long lastParticleSeen;
+        private boolean isConfirmed = false;
 
         private EnderNode(BlockPos pos) {
-            super(pos, () -> SkyblockerConfigManager.get().otherLocations.end.enderNodeWaypointType, ColorUtils.getFloatComponents(DyeColor.CYAN));
+            super(pos, () -> SkyblockerConfigManager.get().otherLocations.end.enderNodeWaypointType,
+                  getColorComponents(), getAlpha(), LINE_WIDTH, true);
+            this.lastParticleSeen = System.currentTimeMillis();
+        }
+
+        private static float[] getColorComponents() {
+            java.awt.Color configColor = SkyblockerConfigManager.get().otherLocations.end.enderNodeColor;
+            return new float[]{
+                configColor.getRed() / 255f,
+                configColor.getGreen() / 255f,
+                configColor.getBlue() / 255f
+            };
+        }
+
+        private static float getAlpha() {
+            return SkyblockerConfigManager.get().otherLocations.end.enderNodeColor.getAlpha() / 255f;
         }
 
         private void updateWaypoint() {
-            tick(client);
             long currentTimeMillis = System.currentTimeMillis();
-            if (lastConfirmed + 2000 > currentTimeMillis || client.world == null || !particles.entrySet().stream().allMatch(entry -> entry.getValue().leftInt() >= 5 && entry.getValue().rightInt() >= 5 || !client.world.getBlockState(pos.offset(entry.getKey())).isAir())) return;
-            lastConfirmed = currentTimeMillis;
-            for (Map.Entry<Direction, IntIntPair> entry : particles.entrySet()) {
-                entry.getValue().left(0);
-                entry.getValue().right(0);
+
+            // More lenient detection: only need 5 particles of each type per direction
+            // Check every 500ms to confirm nodes faster
+            if (isConfirmed || lastConfirmed + 500 > currentTimeMillis || client.world == null) return;
+
+            // Check if we have enough particles on at least one direction to confirm this is an ender node
+            boolean hasEnoughParticles = particles.entrySet().stream()
+                    .anyMatch(entry -> entry.getValue().leftInt() >= 5 && entry.getValue().rightInt() >= 5);
+
+            if (hasEnoughParticles) {
+                lastConfirmed = currentTimeMillis;
+                isConfirmed = true;
+                // Reset particle counters
+                for (Map.Entry<Direction, IntIntPair> entry : particles.entrySet()) {
+                    entry.getValue().left(0);
+                    entry.getValue().right(0);
+                }
             }
         }
 
         @Override
         public boolean shouldRender() {
-            return super.shouldRender() && lastConfirmed + 5000 > System.currentTimeMillis();
+            // Render as long as it's enabled and confirmed
+            // No time limit - will render until the block is mined
+            return isEnabled() && isConfirmed;
+        }
+
+        @Override
+        public boolean shouldRenderThroughWalls() {
+            // Always render through walls
+            return true;
         }
     }
 }
