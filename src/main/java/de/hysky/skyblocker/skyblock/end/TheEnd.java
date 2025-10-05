@@ -10,6 +10,7 @@ import de.hysky.skyblocker.utils.ColorUtils;
 import de.hysky.skyblocker.utils.Utils;
 import de.hysky.skyblocker.utils.data.ProfiledData;
 import de.hysky.skyblocker.utils.waypoint.Waypoint;
+import it.unimi.dsi.fastutil.floats.FloatLongPair;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
@@ -24,6 +25,7 @@ import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.DyeColor;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.ChunkPos;
@@ -31,16 +33,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TheEnd {
     protected static final Logger LOGGER = LoggerFactory.getLogger(TheEnd.class);
 	private static final Path FILE = SkyblockerMod.CONFIG_DIR.resolve("end.json");
+	private static final Pattern COMBAT_XP_PATTERN = Pattern.compile("\\+(?<xp>\\d+(?:\\.\\d+)?) Combat \\((?<percent>[\\d,]+(?:\\.\\d+)?%|[\\d,]+/[\\d,]+)\\)");
+	private static final NumberFormat NUMBER_FORMAT = NumberFormat.getInstance(Locale.US);
+	private static final Queue<FloatLongPair> combatXpGains = new ArrayDeque<>();
 
     public static Set<UUID> hitZealots = new HashSet<>();
 	public static ProfiledData<EndStats> PROFILES_STATS = new ProfiledData<>(FILE, EndStats.CODEC);
@@ -86,7 +97,23 @@ public class TheEnd {
         SkyblockEvents.LOCATION_CHANGE.register(location -> resetLocation());
 
         ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
-            if (!Utils.isInTheEnd() || overlay) return true;
+            if (!Utils.isInTheEnd()) return true;
+
+            // Track Combat XP gains from action bar overlay messages
+            if (overlay) {
+                Matcher matcher = COMBAT_XP_PATTERN.matcher(Formatting.strip(message.getString()));
+                if (matcher.find()) {
+                    try {
+                        float xpAmount = NUMBER_FORMAT.parse(matcher.group("xp")).floatValue();
+                        combatXpGains.offer(FloatLongPair.of(xpAmount, System.currentTimeMillis()));
+                        EndHudWidget.getInstance().update();
+                    } catch (ParseException e) {
+                        LOGGER.error("[Skyblocker End HUD] Failed to parse combat xp", e);
+                    }
+                }
+                return true;
+            }
+
             String lowerCase = message.getString().toLowerCase(Locale.ENGLISH);
             if (lowerCase.contains("tremor")) {
                 if (stage == 0) checkAllProtectorLocations();
@@ -134,6 +161,44 @@ public class TheEnd {
     private static void resetLocation() {
         stage = 0;
         currentProtectorLocation = null;
+        combatXpGains.clear();
+    }
+
+    /**
+     * Calculates Combat XP gained per minute based on recent XP gains.
+     * Removes XP gains older than 60 seconds for accurate rate calculation.
+     * @return Combat XP per minute, or 0 if no data available
+     */
+    public static float getCombatXpPerMinute() {
+        long currentTime = System.currentTimeMillis();
+        long oneMinuteAgo = currentTime - 60_000;
+
+        // Remove entries older than 1 minute
+        while (!combatXpGains.isEmpty() && combatXpGains.peek().rightLong() < oneMinuteAgo) {
+            combatXpGains.poll();
+        }
+
+        if (combatXpGains.isEmpty()) {
+            return 0;
+        }
+
+        // Calculate total XP gained
+        float totalXp = 0;
+        for (FloatLongPair entry : combatXpGains) {
+            totalXp += entry.leftFloat();
+        }
+
+        // Calculate time span from earliest entry to now
+        long earliestTime = combatXpGains.peek().rightLong();
+        long timeSpan = currentTime - earliestTime;
+
+        // If timeSpan is too small (less than 5 seconds), not enough data for accurate rate
+        if (timeSpan < 5000) {
+            return 0;
+        }
+
+        // Convert to XP per minute: (totalXp / timeSpan in ms) * 60000 ms/min
+        return totalXp / timeSpan * 60_000f;
     }
 
     public static void onEntityDeath(Entity entity) {

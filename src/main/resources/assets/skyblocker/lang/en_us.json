@@ -883,6 +883,8 @@
   "skyblocker.config.otherLocations.end.screen": "End HUD Config...",
   "skyblocker.config.otherLocations.end.waypoint": "End Protector Waypoint",
   "skyblocker.config.otherLocations.end.zealotKillsEnabled": "Show Zealot Kills Information",
+  "skyblocker.config.otherLocations.end.enableEnderNodeTracker": "Enable Ender Node Tracker Widget",
+  "skyblocker.config.otherLocations.end.enableEnderNodeTracker.@Tooltip": "Displays a HUD widget showing the quantity and bazaar value of valuable items from Ender Nodes:\n• Grand Experience Bottle\n• Titanic Experience Bottle\n• Mite Gel",
 
   "skyblocker.config.otherLocations.rift": "The Rift",
   "skyblocker.config.otherLocations.rift.blobbercystGlow": "Blobbercyst Glow",
