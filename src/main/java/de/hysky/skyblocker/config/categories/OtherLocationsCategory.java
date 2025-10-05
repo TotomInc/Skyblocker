@@ -184,6 +184,14 @@ public class OtherLocationsCategory {
 										newValue -> config.otherLocations.end.muteEndermanSounds = newValue)
 								.controller(ConfigUtils.createBooleanController())
 								.build())
+						.option(Option.<Boolean>createBuilder()
+								.name(Text.translatable("skyblocker.config.otherLocations.end.enableEnderNodeTracker"))
+								.description(Text.translatable("skyblocker.config.otherLocations.end.enableEnderNodeTracker.@Tooltip"))
+								.binding(defaults.otherLocations.end.enableEnderNodeTracker,
+										() -> config.otherLocations.end.enableEnderNodeTracker,
+										newValue -> config.otherLocations.end.enableEnderNodeTracker = newValue)
+								.controller(ConfigUtils.createBooleanController())
+								.build())
 						.build())
 
 				//Spider's Den

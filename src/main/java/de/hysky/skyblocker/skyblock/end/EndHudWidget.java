@@ -58,6 +58,12 @@ public class EndHudWidget extends ComponentBasedWidget {
 
 	@Override
 	public void updateContent() {
+		// Combat XP per minute
+		float combatXpPerMinute = TheEnd.getCombatXpPerMinute();
+		if (combatXpPerMinute > 0) {
+			addComponent(new PlainTextComponent(Text.literal(Formatters.FLOAT_NUMBERS.format(combatXpPerMinute) + " Combat XP/min").formatted(Formatting.AQUA)));
+		}
+
 		// Zealots
 		if (SkyblockerConfigManager.get().otherLocations.end.zealotKillsEnabled) {
 			TheEnd.EndStats endStats = TheEnd.PROFILES_STATS.computeIfAbsent(TheEnd.EndStats.EMPTY);

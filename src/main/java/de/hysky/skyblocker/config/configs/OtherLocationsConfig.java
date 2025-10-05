@@ -52,6 +52,8 @@ public class OtherLocationsConfig {
 
 		public boolean muteEndermanSounds = false;
 
+		public boolean enableEnderNodeTracker = true;
+
         public int x = 10;
 
         public int y = 10;
